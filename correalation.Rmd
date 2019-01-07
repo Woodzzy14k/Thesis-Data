@@ -111,10 +111,10 @@ plot(Rclover)
 ```
 ```{r}
 #keep date
-Rclover=Rclover[-1]
+RclovernDate=Rclover[-1]
 Rclover
 
-M=cor(Rclover)
+M=cor(RclovernDate)
 corrplot(M,method="circle")
 corrplot.mixed(M)
 ```
@@ -159,84 +159,637 @@ ggplot()+geom_point(aes(x=x,y=y, color="Waiting Time"))+geom_line(aes(waitSEQ,yh
 ```
 
 ```{r}
-#treat like communism and isolate!
-area=Rclover$Precip   #x1
-peri=Rclover$Tmax #x2
-shape=Rclover$`20_Precip` #x2
-perm=Rclover$`10_Day`#y predicting this by the x values
+#singular and mulitple regression using T min, mean and max to predict discharge
+
+#isolate columns into x1,x2,x3 and y
+x1=Rclover$Tmin #x1------------------->
+x2=Rclover$Tmean #x2 --------------------> these are predictors
+x3=Rclover$Tmax #x2 --------------------->
+y=Rclover$`10_Day` #y ---->this is the indicator
+
+dim(Rclover)
+
+#find yhat for each variable
 
 
-#find yhat for each one!!!!GAAAAAHH
-#for area............................
-ones2=matrix(1,nrow=length(perm))
-areaDesign=cbind(ones2,area)
-areaXX=t(areaDesign)%*%areaDesign
-areaXY=t(areaDesign)%*%perm
-areaB=solve(areaXX)%*%areaXY
-areaB
+#x1 ...........................
+onesColumn=matrix(1,nrow=length(y))   
+x1Design=cbind(onesColumn,x1)
+x1XX=t(x1Design)%*%x1Design
+x1XY=t(x1Design)%*%y #check this
+x1B=solve(x1XX)%*%x1XY
+x1B
 #now yhat! 
-areaYhat=areaDesign%*%areaB
-head(areaYhat)
-#same x sequence
-seq7=seq(0,1400,length.out = 2683)
-#for perimeter....................
-periDesign=cbind(ones2,peri)
-periXX=t(periDesign)%*%periDesign
-periXY=t(periDesign)%*%peri
-periB=solve(periXX)%*%periXY
-areaB
+x1Yhat=x1Design%*%x1B
+head(x1Yhat)
+#check and make sure the yhat populated correctly
+x1Yhat
+#find the range the new yhat occupies
+range(x1Yhat)
+#same x sequence with the range the new yhat occupies
+#seqClov1=seq(0.0002157628, 0.0065380331,length.out = 2683)
+
+
+#x2 ....................
+x2Design=cbind(onesColumn,x2)
+x2XX=t(x2Design)%*%x2Design
+x2XY=t(x2Design)%*%y #check this
+x2B=solve(x2XX)%*%x2XY
+x2B
 #now yhat! 
-periYhat=periDesign%*%periB
-head(periYhat)
-#same x sequence
-seq7=seq(0,1400,length.out = 2683)
-#for shape...........................
-shapeDesign=cbind(ones2,shape)
-shapeXX=t(shapeDesign)%*%shapeDesign
-shapeXY=t(shapeDesign)%*%shape
-shapeB=solve(shapeXX)%*%shapeXY
+x2Yhat=x2Design%*%x2B
+
+
+#make sure the yhat populated correctly
+head(x2Yhat)
+x2Yhat
+
+#find the range the new yhat occupies
+range(x2Yhat)
+#same x sequence with the range of the new yhat
+#seqClov2=seq(0.002282306, 0.002689554,length.out = 2683)
+
+
+
+
+#x3 ...........................
+x3Design=cbind(onesColumn,x3)
+x3XX=t(x3Design)%*%x3Design
+x3XY=t(x3Design)%*%y
+x3B=solve(x3XX)%*%x3XY
 shapeB
 #now yhat! 
-shapeYhat=shapeDesign%*%shapeB
-head(shapeYhat)
+x3Yhat=x3Design%*%x3B
+
+
+#make sure yhat populated correctly
+head(x3Yhat)
+x3Yhat
+#range of new yhat
+range(x3Yhat)
 #same x sequence
-seq7=seq(0,1400,length.out = 2683)
+#seqClov3=seq(-0.0001728375, 0.0068978980,length.out = 2683)
+
+
+
+
+
 #makes plots for all of them!
-regress1=ggplot()+geom_point(aes(areaYhat, perm, color="area"))+geom_line(aes(seq7,areaYhat, color="yhat"))+ggtitle("Permeability vs Area")+xlab("Area")+ylab("Permeability (milliDarcy)")
-regress2=ggplot()+geom_point(aes(periYhat,perm,color="perimeter"))+geom_line(aes(seq7,periYhat, color="yhat"))+ggtitle("Permeability vs Perimeter")+xlab("Perimeter")+ylab("Permeability (milliDarcy)")
-regress3=ggplot()+geom_point(aes(shapeYhat, perm))+geom_line(aes(seq7,shapeYhat, color="yhat"))+ggtitle("Permeability vs Shape")+xlab("Shape")+ylab("Permeability (milliDarcy)")
-#combine with grid.arrange
-grid.arrange(grobs=list(regress1,regress2,regress3),nrow=3)
 
-ggsave("ex.jpg")
+c1=ggplot()+geom_line(aes(Rclover$Date, y, color="Actual Discharge"))+geom_line(aes(Rclover$Date,x1Yhat, color="Predicted Discharge"))+ggtitle("Minimum temperature to predict discharge ")+xlab(NULL)+ylab("Discharge (cms)")
+  
+c2=ggplot()+geom_line(aes(Rclover$Date, y, color="Actual Discharge"))+geom_line(aes(Rclover$Date,x2Yhat, color="Predicted Discharge"))+ggtitle("Mean temperature to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+
+c3= ggplot()+geom_line(aes(Rclover$Date, y, color="Actual Discharge"))+geom_line(aes(Rclover$Date,x3Yhat, color="Predicted Discharge"))+ggtitle("Max temperature to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+
+grid.arrange(grobs=list(c1,c2,c3),nrow=3)
+g=arrangeGrob(c1,c2,c3,nrow=3)
+ggsave(file="temp min max and mean.jpg", g)
 
 
 
+#multiply regression
 
-
-ones2=matrix(1,nrow=length(perm))
+ones2=matrix(1,nrow=length(y))
 #combine these guys to make design matrix
-rockDesign=cbind(ones2,area,peri,shape)
+clovDesign=cbind(ones2,x1,x2,x3)
 #use normal equations to solve for B
-rockXX=t(rockDesign)%*%rockDesign
-rockXY=t(rockDesign)%*%perm
-rockB=solve(rockXX)%*%rockXY
+clovXX=t(clovDesign)%*%clovDesign
+clovXY=t(clovDesign)%*%y
+clovB=solve(clovXX)%*%clovXY
 rockB
 #now yhat! these are the predicted values boooyah!
-rockYhat=rockDesign%*%rockB
-head(rockYhat)
+clovYhat=clovDesign%*%clovB
+#check it
+head(clovYhat)
+clovYhat
+#check range of yhat for the sequence
+range(clovYhat)
 #now an x sequence
-seq7=seq(0,1400,length.out = 2683)
+#seq7=seq(0,1400,length.out = 2683)
 #plot
-ggplot()+geom_point(aes(rockYhat,perm, color="Permeability"))+geom_line(aes(seq7,rockYhat, color="yhat"))+ggtitle("Permeability vs calculated yhat (perimeter, area, shape)")+xlab("Yhat")+ylab("Permeability (milliDarcy)")
 
+correlatefunction(y, clovYhat)
+
+ggplot()+geom_line(aes(Rclover$Date,y, color="Actual Discharge"))+geom_line(aes(Rclover$Date,clovYhat, color="Predicted Discharge"))+ggtitle("Multiple Regression to predict discharge by using temp min, max and mean")+xlab("Yhat")+ylab("Discharge (cms)")
+
+ggsave("temp min max and mean multiple.jpg")
 
 ```
 
-#Big Springs
+#now predict discharge with precipitation
+
+```{r}
+#singular and mulitple regression using T min, mean and max to predict discharge
+
+#isolate columns into x1,x2,x3 and y
+x1=Rclover$Precip #x1------------------->
+x2=Rclover$`5_Precip` #x2 --------------------> these are predictors
+x3=Rclover$`15_Precip`#x2 --------------------->
+y=Rclover$`10_Day` #y ---->this is the indicator
+
+dim(Rclover)
+
+#find yhat for each variable
+
+
+#x1 ...........................
+onesColumn=matrix(1,nrow=length(y))   
+x1Design=cbind(onesColumn,x1)
+x1XX=t(x1Design)%*%x1Design
+x1XY=t(x1Design)%*%y #check this
+x1B=solve(x1XX)%*%x1XY
+x1B
+#now yhat! 
+x1Yhat=x1Design%*%x1B
+head(x1Yhat)
+#check and make sure the yhat populated correctly
+x1Yhat
+#find the range the new yhat occupies
+range(x1Yhat)
+#same x sequence with the range the new yhat occupies
+#seqClov1=seq(0.0002157628, 0.0065380331,length.out = 2683)
+
+
+#x2 ....................
+x2Design=cbind(onesColumn,x2)
+x2XX=t(x2Design)%*%x2Design
+x2XY=t(x2Design)%*%y #check this
+x2B=solve(x2XX)%*%x2XY
+x2B
+#now yhat! 
+x2Yhat=x2Design%*%x2B
+
+#make sure the yhat populated correctly
+head(x2Yhat)
+x2Yhat
+
+#find the range the new yhat occupies
+range(x2Yhat)
+#same x sequence with the range of the new yhat
+#seqClov2=seq(0.002282306, 0.002689554,length.out = 2683)
+
+
+
+
+#x3 ...........................
+x3Design=cbind(onesColumn,x3)
+x3XX=t(x3Design)%*%x3Design
+x3XY=t(x3Design)%*%y
+x3B=solve(x3XX)%*%x3XY
+shapeB
+#now yhat! 
+x3Yhat=x3Design%*%x3B
+
+
+#make sure yhat populated correctly
+head(x3Yhat)
+x3Yhat
+#range of new yhat
+range(x3Yhat)
+#same x sequence
+#seqClov3=seq(-0.0001728375, 0.0068978980,length.out = 2683)
+
+
+
+
+
+#makes plots for all of them!
+
+c1=ggplot()+geom_line(aes(Rclover$Date, y, color="Actual Discharge"))+geom_line(aes(Rclover$Date, x1Yhat, color="Predicted Discharge"))+ggtitle("Daily Precipitation to predict discharge ")+xlab(NULL)+ylab("Discharge (cms)")
+  
+c2=ggplot()+geom_line(aes(Rclover$Date, y, color="Actual Discharge"))+geom_line(aes(Rclover$Date, x2Yhat, color="Predicted Discharge"))+ggtitle("5 Day Precipitation totals to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+
+c3= ggplot()+geom_line(aes(Rclover$Date, y, color="Actual Discharge"))+geom_line(aes(Rclover$Date,x3Yhat, color="Predicted Discharge"))+ggtitle("15 day precipitation totals to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+
+grid.arrange(grobs=list(c1,c2,c3),nrow=3)
+g=arrangeGrob(c1,c2,c3,nrow=3)
+ggsave(file="precip predictions with all predictors.jpg", g)
+
+
+
+#multiply regression
+
+ones2=matrix(1,nrow=length(y))
+#combine these guys to make design matrix
+clovDesign=cbind(ones2,x1,x2,x3)
+#use normal equations to solve for B
+clovXX=t(clovDesign)%*%clovDesign
+clovXY=t(clovDesign)%*%y
+clovB=solve(clovXX)%*%clovXY
+
+#now yhat! these are the predicted values boooyah!
+clovYhat=clovDesign%*%clovB
+#check it
+head(clovYhat)
+#clovYhat
+#check range of yhat for the sequence
+range(clovYhat)
+#now an x sequence
+#seq7=seq(0,1400,length.out = 2683)
+#plot
+
+correlatefunction(y,clovYhat)
+
+ggplot()+geom_line(aes(Rclover$Date,y, color="Actual Discharge "))+geom_line(aes(Rclover$Date,clovYhat, color="Predicted Discharge"))+ggtitle("Precipitation, 5 day and 10 day Precipitation to predict discharge")+xlab("Predicted Discharge")+ylab("Discharge (cms)")
+
+ggsave("precip2.jpg")
+```
+
+
+###### Big Springs ######
+
+```{r}
+#bring the big springs data. This is mean daily discharge, mean daily temperature, and then values from prism like precip, temperature max, temperature min, and then mean temnperature
+
+R_Ready_Big <- read_csv("R_Ready_Big.csv", 
+    col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+big=R_Ready_Big
+big
+
+big=as.data.frame(big)
+
+plot(big)
+
+```
+
+```{r}
+#mean daily discharge correlation
+
+#discharge and water temp
+correlatefunction(big$Discharge_cms,big$Temp_C)
+# -0.7806505
+
+#discharge and daily precip
+correlatefunction(big$Discharge_cms,big$Prism_Precip)
+#-0.05308343
+
+#discharge and 5 day precip totals
+correlatefunction(big$Discharge_cms,big$`5_day`)
+# -0.1200071
+
+#discharge and 10 day precip totals
+correlatefunction(big$Discharge_cms, big$`10_day`)
+#-0.169377
+
+#discharge and 15 day precip totals
+correlatefunction(big$Discharge_cms, big$`15_day`)
+# -0.2162119
+
+#discharge and 20 day precip totals
+correlatefunction(big$Discharge_cms, big$`20_day`)
+#-0.2637433
+
+#discharge and minimum temp
+correlatefunction(big$Discharge_cms, big$tmin)
+#-0.7013796
+
+#discharge and mean temp
+correlatefunction(big$Discharge_cms, big$tmean)
+#-0.724504
+
+#discharge and max temp
+correlatefunction(big$Discharge_cms, big$tmax)
+# -0.7270718
+
+
+
+
+# mean daily temperature correlation
+
+#temp and mean daily discharge
+correlatefunction(big$Temp_C, big$Discharge_cms)
+# -0.7806505
+
+#temp and prism precip
+correlatefunction(big$Temp_C, big$Prism_Precip)
+# 0.05500457
+
+#temp and 5 day precip
+correlatefunction(big$Temp_C, big$`5_day`)
+# 0.09488335
+
+#temp and 10 day precip
+correlatefunction(big$Temp_C, big$`10_day`)
+ #0.1230024
+
+#temp and 15 day precip
+correlatefunction(big$Temp_C, big$`15_day`)
+# 0.1385684
+
+#temp and 20 day precip
+correlatefunction(big$Temp_C,big$`20_day`)
+#0.1789871
+
+#temp and tmin
+correlatefunction(big$Temp_C, big$tmin)
+#0.9566183
+
+#temp and tmean
+correlatefunction(big$Temp_C, big$tmean)
+#0.9635807
+
+#temp and tmax
+correlatefunction(big$Temp_C, big$tmax)
+#0.9457587
+
+```
+
+#corrplot
+```{r}
+bignDate=big[-1]
+bignDate=as.data.frame(bignDate)
+bignDate
+
+M1=cor(bignDate)
+corrplot(M1,method="circle")
+corrplot.mixed(M1)
+```
+#plot
+```{r}
+plot(bignDate)
+
+```
+
+
+#single regression
+```{r}
+
+#use 15day precip to predict discharge
+
+x=big$`15_day`
+y=big$Discharge_cms
+
+#design matrix
+desMatrix1=matrix(x) 
+#check NA
+any(is.na(desMatrix1))
+#linear algebra model function
+linearAlgebraModel=function(desMatrix1,y){
+  XX=t(desMatrix1)%*%desMatrix1
+  XY=t(desMatrix1)%*%y
+  B=solve(XX)%*%XY
+  print(B)
+}
+
+#run the linear algebra function with the design matrix (made of "x", predicted value) and y (predictor)
+linearAlgebraModel(desMatrix1, y)
+
+#find the B
+B=linearAlgebraModel(desMatrix1,y)
+waitSEQ=seq(0,65)
+yhat1=waitSEQ*B[1]
+#library(ggplot2)
+plot(x,y)
+ggplot()+geom_point(aes(x,y))+geom_line(aes(waitSEQ,yhat1))
+
+
+#design matrix with 1's
+ones=matrix(1,nrow=length(x))
+desMatrix2=cbind(ones,x)
+B2=linearAlgebraModel(desMatrix2,y)
+waitSEQ=seq(0,65)
+waitSEQ
+dim(waitSEQ)
+yhat2=waitSEQ*B2[2]+B2[1]
+yhat2
+ggplot()+geom_point(aes(x=x,y=y, color="Discharge"))+geom_line(aes(waitSEQ,yhat2))+labs(x= "15 day Precip", y="Discharge", title="Discharge vs 15 day precip")
+
+```
+#multiple regression using just temperature
 
 ```{r}
 
+#isolate columns into x1,x2,x3 and y
+x1=big$tmin #x1------------------->
+x2=big$tmean #x2 --------------------> these are predictors
+x3=big$tmax #x2 --------------------->
+y=big$Discharge_cms #y ---->this is the indicator
+
+
+#find yhat for each variable
+
+
+#x1 ...........................
+onesColumn=matrix(1,nrow=length(y))   
+x1Design=cbind(onesColumn,x1)
+x1XX=t(x1Design)%*%x1Design
+x1XY=t(x1Design)%*%y #check this
+x1B=solve(x1XX)%*%x1XY
+x1B
+#now yhat! 
+x1Yhat=x1Design%*%x1B
+head(x1Yhat)
+#check and make sure the yhat populated correctly
+x1Yhat
+#find the range the new yhat occupies
+range(x1Yhat)
+#same x sequence with the range the new yhat occupies
+#seq1=seq( 0.01047570, 0.01053604,length.out = 293)
+
+
+#x2 ....................
+x2Design=cbind(onesColumn,x2)
+x2XX=t(x2Design)%*%x2Design
+x2XY=t(x2Design)%*%y #check this
+x2B=solve(x2XX)%*%x2XY
+x2B
+#now yhat! 
+x2Yhat=x2Design%*%x2B
+
+#make sure the yhat populated correctly
+head(x2Yhat)
+x2Yhat
+
+#find the range the new yhat occupies
+range(x2Yhat)
+#same x sequence with the range of the new yhat
+#seq2=seq(0.01044478, 0.01064348,length.out = 293)
+
+
+
+
+#x3 ...........................
+x3Design=cbind(onesColumn,x3)
+x3XX=t(x3Design)%*%x3Design
+x3XY=t(x3Design)%*%y
+x3B=solve(x3XX)%*%x3XY
+shapeB
+#now yhat! 
+x3Yhat=x3Design%*%x3B
+
+
+#make sure yhat populated correctly
+head(x3Yhat)
+x3Yhat
+#range of new yhat
+range(x3Yhat)
+#same x sequence
+#seq3=seq(0.01044192, 0.01064461,length.out = 293)
+
+
+
+
+
+#makes plots for all of them!
+b1=ggplot()+geom_line(aes(newBig$Date, y, color="Actual Discharge"))+geom_line(aes(newBig$Date,x1Yhat, color="Modeled Discharge"))+ggtitle(" Minimum Temperature to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+b2=ggplot()+geom_line(aes(newBig$Date, y, color="Actual Discharge"))+geom_line(aes(newBig$Date,x2Yhat, color="Modeled Discharge"))+ggtitle("Mean Temperature to predict Discharge")+xlab(NULL)+ylab("Discharge (cms)")
+b3=ggplot()+geom_line(aes(newBig$Date, y, color="Actual Discharge"))+geom_line(aes(newBig$Date,x3Yhat, color="Modeled Discharge"))+ggtitle("Maximum Temperature to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+
+grid.arrange(grobs=list(b1,b2,b3),nrow=3)
+g=arrangeGrob(b1,b2,b3,nrow=3)
+ggsave(file="temperature single regression at big.jpg", g)
+
+
+
 ```
 
+#multiple regression
+
+```{r}
+#column of ones!
+ones2=matrix(1,nrow=length(y))
+#combine these guys to make design matrix
+comboDesign=cbind(ones2,x1,x2,x3)
+#use normal equations to solve for B
+comboXX=t(comboDesign)%*%comboDesign
+comboXY=t(comboDesign)%*%y
+comboB=solve(comboXX)%*%comboXY
+#check
+comboB
+#now yhat! these are the predicted values boooyah!
+comboYhat=comboDesign%*%comboB
+#make sure yhat populated
+head(comboYhat)
+comboYhat
+#check range to put in the sequence
+range(comboYhat)
+#now an x sequence
+#seq7=seq(0.01041923, 0.01065488,length.out = 293)
+
+correlatefunction(y, comboYhat )
+
+
+#plot modeled and actual discharge against each other
+ggplot()+geom_line(aes(x=big$Date, y=y, color="Actual Discharge"))+geom_line(aes(x=big$Date, y=comboYhat, color="Predicted Discharge"))+theme_classic()+xlab(NULL)+ggtitle("Modeled vs Actual Discharge at Big Springs")+ylab("Discharge (cms)")+theme_bw()+
+theme(axis.title.y=element_text(size=15),axis.text.y=element_text(size=12),axis.title.x=element_text(size=16), plot.title=element_text(size=19, face="bold", color="black"))+ guides(color=guide_legend(title="Legend"))
+
+ggsave("temperature multiple discharge at big springs.jpg")
+
+```
+#same thing, but with precipitation
+```{r}
+#isolate columns into x1,x2,x3 and y
+x1=big$`5_day` #x1------------------->
+x2=big$`10_day` #x2 --------------------> these are predictors
+x3=big$`15_day`#x2 --------------------->
+y=big$Discharge_cms #y ---->this is the indicator
+
+
+#find yhat for each variable
+
+
+#x1 ...........................
+onesColumn=matrix(1,nrow=length(y))   
+x1Design=cbind(onesColumn,x1)
+x1XX=t(x1Design)%*%x1Design
+x1XY=t(x1Design)%*%y #check this
+x1B=solve(x1XX)%*%x1XY
+x1B
+#now yhat! 
+x1Yhat=x1Design%*%x1B
+head(x1Yhat)
+#check and make sure the yhat populated correctly
+x1Yhat
+#find the range the new yhat occupies
+range(x1Yhat)
+#same x sequence with the range the new yhat occupies
+#seq1=seq( 0.01047570, 0.01053604,length.out = 293)
+
+
+#x2 ....................
+x2Design=cbind(onesColumn,x2)
+x2XX=t(x2Design)%*%x2Design
+x2XY=t(x2Design)%*%y #check this
+x2B=solve(x2XX)%*%x2XY
+x2B
+#now yhat! 
+x2Yhat=x2Design%*%x2B
+
+#make sure the yhat populated correctly
+head(x2Yhat)
+x2Yhat
+
+#find the range the new yhat occupies
+range(x2Yhat)
+#same x sequence with the range of the new yhat
+#seq2=seq(0.01044478, 0.01064348,length.out = 293)
+
+
+
+
+#x3 ...........................
+x3Design=cbind(onesColumn,x3)
+x3XX=t(x3Design)%*%x3Design
+x3XY=t(x3Design)%*%y
+x3B=solve(x3XX)%*%x3XY
+shapeB
+#now yhat! 
+x3Yhat=x3Design%*%x3B
+
+
+#make sure yhat populated correctly
+head(x3Yhat)
+x3Yhat
+#range of new yhat
+range(x3Yhat)
+#same x sequence
+#seq3=seq(0.01044192, 0.01064461,length.out = 293)
+
+
+
+
+
+#makes plots for all of them!
+b1=ggplot()+geom_line(aes(newBig$Date, y, color="Actual Discharge"))+geom_line(aes(newBig$Date,x1Yhat, color="Modeled Discharge"))+ggtitle(" 5 Day precipitation to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+b2=ggplot()+geom_line(aes(newBig$Date, y, color="Actual Discharge"))+geom_line(aes(newBig$Date,x2Yhat, color="Modeled Discharge"))+ggtitle("10 Day precipitation to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+b3=ggplot()+geom_line(aes(newBig$Date, y, color="Actual discharge"))+geom_line(aes(newBig$Date,x3Yhat, color="Predicted Discharge"))+ggtitle("15 day precipitation to predict discharge")+xlab(NULL)+ylab("Discharge (cms)")
+
+grid.arrange(grobs=list(b1,b2,b3),nrow=3)
+g=arrangeGrob(b1,b2,b3,nrow=3)
+ggsave(file="precipitation single regression big springs.jpg", g)
+
+
+
+
+```
+#multiple regrewssion
+```{r}
+#column of ones!
+ones2=matrix(1,nrow=length(y))
+#combine these guys to make design matrix
+comboDesign=cbind(ones2,x1,x2,x3)
+#use normal equations to solve for B
+comboXX=t(comboDesign)%*%comboDesign
+comboXY=t(comboDesign)%*%y
+comboB=solve(comboXX)%*%comboXY
+#check
+comboB
+#now yhat! these are the predicted values boooyah!
+comboYhat=comboDesign%*%comboB
+#make sure yhat populated
+head(comboYhat)
+comboYhat
+#check range to put in the sequence
+range(comboYhat)
+#now an x sequence
+#seq7=seq(0.01041923, 0.01065488,length.out = 293)
+
+
+#plot modeled and actual discharge against each other
+ggplot()+geom_line(aes(x=big$Date, y=y, color="Actual Discharge"))+geom_line(aes(x=big$Date, y=comboYhat, color="Predicted Discharge"))+theme_classic()+xlab(NULL)+ggtitle("Multiple regression using precipitation to predict discharge at Big Springs")+ylab("Discharge (cms)")+theme_bw()+
+theme(axis.title.y=element_text(size=15),axis.text.y=element_text(size=12),axis.title.x=element_text(size=16), plot.title=element_text(size=19, face="bold", color="black"))+ guides(color=guide_legend(title="Legend"))
+
+ggsave("precip multiple discharge at big springs.jpg")
+```
 
