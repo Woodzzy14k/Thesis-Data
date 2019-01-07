@@ -1,0 +1,146 @@
+---
+title: "clover correlation"
+output: html_document
+---
+
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("ggplot2")
+library(ggplot2)
+library(lubridate)
+install.packages("corrplot")
+library(corrplot)
+```
+
+#bring in discharge, precip, and temp data
+```{r}
+R_Ready_Clover <- read_csv("R_Ready_Clover_new.csv", 
+    col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+
+Rclover=R_Ready_Clover
+
+Rclover=as.data.frame(Rclover)
+```
+
+#auto correlate
+```{r}
+#correlate function from R class
+
+correlatefunction = function(x,y){
+  xAnom= x-mean(x)
+  xVar = t(xAnom)%*%xAnom/(length(xAnom)-1)
+  yAnom= y-mean(y)
+  yVar = t(yAnom)%*%yAnom/(length(yAnom)-1)
+  covarianceXY = t(xAnom) %*% yAnom/ (length(x)-1)
+  rho= covarianceXY/(sqrt(xVar*yVar))
+  print(rho)
+}
+
+#isolate the variables for correlation function
+discharge=Rclover$Mean_Daily
+dischargeTen=Rclover$`10_Day`
+precip=Rclover$Precip
+tMean=Rclover$Tmean
+tMax=Rclover$Tmax
+tMin=Rclover$Tmin
+precip5=Rclover$`5_Precip`
+precip10=Rclover$`10_Precip`
+precip15=Rclover$`15_Precip`
+precip20=Rclover$`20_Precip`
+
+#discharge correlation
+correlatefunction(discharge,precip)
+# 0.08778667
+
+correlatefunction(discharge,tMean)
+# -0.2119314
+
+correlatefunction(discharge, tMax)
+#-0.223613
+
+correlatefunction(discharge, tMin)
+#-0.1901913
+
+correlatefunction(discharge, precip5)
+#0.08854493
+
+correlatefunction(discharge, precip10)
+#0.1223839
+
+
+correlatefunction(discharge, precip15)
+# 0.1646641
+
+correlatefunction(discharge, precip20)
+#0.1901128
+
+#10-day moving average discharge 
+correlatefunction(dischargeTen, precip)
+# 0.07474993
+
+correlatefunction(dischargeTen,tMax)
+# -0.2393274
+
+correlatefunction(dischargeTen, tMean)
+#-0.2306164
+
+correlatefunction(dischargeTen, tMin)
+ #-0.2116937
+
+correlatefunction(dischargeTen, precip5)
+#0.1244685
+
+correlatefunction(dischargeTen,precip10)
+#0.1647268
+
+correlatefunction(dischargeTen, precip15)
+#0.19286
+
+correlatefunction(dischargeTen, precip20)
+#0.2241105
+
+```
+
+#correlation
+
+```{r}
+plot(Rclover)
+```
+```{r}
+#keep date
+Rclover=Rclover[-1]
+Rclover
+
+M=cor(Rclover)
+corrplot(M,method="circle")
+corrplot.mixed(M)
+```
+#predictor correlations
+```{r}
+x=discharge
+y=tMax
+
+desMatrix1=matrix(x) #design matrix
+#check NA
+any(is.na(desMatrix1))
+#linear algebra model function
+#library(tidyverse)
+linearAlgebraModel=function(desMatrix1,y){
+  XX=t(desMatrix1)%*%desMatrix1
+  XY=t(desMatrix1)%*%y
+  B=solve(XX)%*%XY
+  print(B)
+}
+linearAlgebraModel(desMatrix1, y)
+
+B=linearAlgebraModel(desMatrix1,y)
+waitSEQ=seq(0,.5)
+yhat1=waitSEQ*B[1]
+yhat1
+#library(ggplot2)
+plot(x,y)
+ggplot()+geom_point(aes(x,y))+geom_line(aes(waitSEQ,yhat1))
+```
+
+
