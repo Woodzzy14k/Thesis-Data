@@ -4,13 +4,15 @@ output: html_document
 ---
 
 ```{r}
-install.packages("tidyverse")
+#install.packages("tidyverse")
 library(tidyverse)
-install.packages("ggplot2")
+#install.packages("ggplot2")
 library(ggplot2)
 library(lubridate)
-install.packages("corrplot")
+#install.packages("corrplot")
 library(corrplot)
+#install.packages("gridExtra")
+library(gridExtra)
 ```
 
 #bring in discharge, precip, and temp data
@@ -118,8 +120,8 @@ corrplot.mixed(M)
 ```
 #predictor correlations
 ```{r}
-x=discharge
-y=tMax
+x=tMax
+y=discharge
 
 desMatrix1=matrix(x) #design matrix
 #check NA
@@ -141,6 +143,100 @@ yhat1
 #library(ggplot2)
 plot(x,y)
 ggplot()+geom_point(aes(x,y))+geom_line(aes(waitSEQ,yhat1))
+
+
+#design matrix with 1's
+ones=matrix(1,nrow=length(x))
+desMatrix2=cbind(ones,x)
+B2=linearAlgebraModel(desMatrix2,y)
+waitSEQ=seq(-10,40)
+waitSEQ
+dim(waitSEQ)
+yhat2=waitSEQ*B2[2]+B2[1]
+yhat2
+?legend
+ggplot()+geom_point(aes(x=x,y=y, color="Waiting Time"))+geom_line(aes(waitSEQ,yhat2))+labs(x= "Waiting", y="Eruptions", title="Waiting Times vs Eruptions with Linear Best Fit")
+```
+
+```{r}
+#treat like communism and isolate!
+area=Rclover$Precip   #x1
+peri=Rclover$Tmax #x2
+shape=Rclover$`20_Precip` #x2
+perm=Rclover$`10_Day`#y predicting this by the x values
+
+
+#find yhat for each one!!!!GAAAAAHH
+#for area............................
+ones2=matrix(1,nrow=length(perm))
+areaDesign=cbind(ones2,area)
+areaXX=t(areaDesign)%*%areaDesign
+areaXY=t(areaDesign)%*%perm
+areaB=solve(areaXX)%*%areaXY
+areaB
+#now yhat! 
+areaYhat=areaDesign%*%areaB
+head(areaYhat)
+#same x sequence
+seq7=seq(0,1400,length.out = 2683)
+#for perimeter....................
+periDesign=cbind(ones2,peri)
+periXX=t(periDesign)%*%periDesign
+periXY=t(periDesign)%*%peri
+periB=solve(periXX)%*%periXY
+areaB
+#now yhat! 
+periYhat=periDesign%*%periB
+head(periYhat)
+#same x sequence
+seq7=seq(0,1400,length.out = 2683)
+#for shape...........................
+shapeDesign=cbind(ones2,shape)
+shapeXX=t(shapeDesign)%*%shapeDesign
+shapeXY=t(shapeDesign)%*%shape
+shapeB=solve(shapeXX)%*%shapeXY
+shapeB
+#now yhat! 
+shapeYhat=shapeDesign%*%shapeB
+head(shapeYhat)
+#same x sequence
+seq7=seq(0,1400,length.out = 2683)
+#makes plots for all of them!
+regress1=ggplot()+geom_point(aes(areaYhat, perm, color="area"))+geom_line(aes(seq7,areaYhat, color="yhat"))+ggtitle("Permeability vs Area")+xlab("Area")+ylab("Permeability (milliDarcy)")
+regress2=ggplot()+geom_point(aes(periYhat,perm,color="perimeter"))+geom_line(aes(seq7,periYhat, color="yhat"))+ggtitle("Permeability vs Perimeter")+xlab("Perimeter")+ylab("Permeability (milliDarcy)")
+regress3=ggplot()+geom_point(aes(shapeYhat, perm))+geom_line(aes(seq7,shapeYhat, color="yhat"))+ggtitle("Permeability vs Shape")+xlab("Shape")+ylab("Permeability (milliDarcy)")
+#combine with grid.arrange
+grid.arrange(grobs=list(regress1,regress2,regress3),nrow=3)
+
+ggsave("ex.jpg")
+
+
+
+
+
+ones2=matrix(1,nrow=length(perm))
+#combine these guys to make design matrix
+rockDesign=cbind(ones2,area,peri,shape)
+#use normal equations to solve for B
+rockXX=t(rockDesign)%*%rockDesign
+rockXY=t(rockDesign)%*%perm
+rockB=solve(rockXX)%*%rockXY
+rockB
+#now yhat! these are the predicted values boooyah!
+rockYhat=rockDesign%*%rockB
+head(rockYhat)
+#now an x sequence
+seq7=seq(0,1400,length.out = 2683)
+#plot
+ggplot()+geom_point(aes(rockYhat,perm, color="Permeability"))+geom_line(aes(seq7,rockYhat, color="yhat"))+ggtitle("Permeability vs calculated yhat (perimeter, area, shape)")+xlab("Yhat")+ylab("Permeability (milliDarcy)")
+
+
+```
+
+#Big Springs
+
+```{r}
+
 ```
 
 
